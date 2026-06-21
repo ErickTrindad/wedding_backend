@@ -1,0 +1,25 @@
+{
+	"compilerOptions": {
+		"module": "nodenext",
+		"target": "esnext",
+		"types": ["node"],
+		"lib": ["esnext"],
+		"sourceMap": true,
+		"declaration": true,
+		"declarationMap": true,
+		"noUncheckedIndexedAccess": true,
+		"exactOptionalPropertyTypes": false,
+		"noImplicitReturns": true,
+		"noImplicitOverride": true,
+		"noUnusedLocals": true,
+		"strict": true,
+		"jsx": "react-jsx",
+		"verbatimModuleSyntax": true,
+		"isolatedModules": true,
+		"noUncheckedSideEffectImports": true,
+		"esModuleInterop": true,
+		"moduleDetection": "force",
+		"skipLibCheck": true
+	},
+	"include": ["src/**/*", "prisma.config.ts", "prisma/**/*.ts"]
+}

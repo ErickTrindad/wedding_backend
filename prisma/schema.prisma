@@ -1,0 +1,121 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Family {
+  id         String @id @default(uuid())
+  name       String
+  accessCode String @unique @map("access_code")
+
+  guests Guest[]
+
+  @@map("families")
+}
+
+model Guest {
+  id      String  @id @default(uuid())
+  name    String
+  isAdmin Boolean @default(false)
+
+  familyId String @map("family_id")
+  family   Family @relation(fields: [familyId], references: [id])
+
+  isSuggested Boolean  @default(true) @map("is_suggested")
+  isConfirmed Boolean? @map("is_confirmed")
+
+  posts         Post[]
+  comments      Comment[]
+  likes         Like[]
+  contributions Contribution[]
+
+  @@map("guests")
+}
+
+model Gift {
+  id            String  @id @default(uuid())
+  title         String
+  description   String?
+  imageUrl      String? @map("image_url")
+  totalValue    Float   @map("total_value")
+  gatheredValue Float   @default(0) @map("gathered_value")
+
+  contribution Contribution[]
+
+  @@map("gifts")
+}
+
+model Contribution {
+  id String @id @default(uuid())
+
+  giftId String? @map("gift_id")
+  gift   Gift?   @relation(fields: [giftId], references: [id])
+
+  guestId   String? @map("guest_id")
+  guest     Guest?  @relation(fields: [guestId], references: [id])
+  donorName String  @map("donor_name")
+
+  message String?
+  amount  Float
+  status  String  @default("PENDING")
+
+  paymentId     String  @unique @map("payment_id")
+  paymentMethod String  @map("payment_method")
+  payerEmail    String? @map("payer_email")
+  payerDocument String? @map("payer_document")
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("contributions")
+}
+
+model Post {
+  id   String  @id @default(uuid())
+  text String?
+
+  guestId    String? @map("guest_id")
+  guest      Guest?  @relation(fields: [guestId], references: [id])
+  authorName String  @map("author_name")
+
+  images    String[]
+  createdAt DateTime @default(now()) @map("created_at")
+
+  likes    Like[]
+  comments Comment[]
+
+  @@map("posts")
+}
+
+model Like {
+  id String @id @default(uuid())
+
+  postId String @map("post_id")
+  post   Post   @relation(fields: [postId], references: [id])
+
+  guestId  String? @map("guest_id")
+  guest    Guest?  @relation(fields: [guestId], references: [id])
+  authorIp String  @map("author_ip")
+
+  type String
+
+  @@map("likes")
+}
+
+model Comment {
+  id String @id @default(uuid())
+
+  postId String @map("post_id")
+  post   Post   @relation(fields: [postId], references: [id])
+
+  guestId    String?
+  guest      Guest?  @relation(fields: [guestId], references: [id])
+  authorName String  @map("author_name")
+
+  text      String
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("comments")
+}
