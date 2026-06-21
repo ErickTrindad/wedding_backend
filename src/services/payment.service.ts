@@ -1,5 +1,6 @@
 import axios from "axios";
 import prisma from "../config/prisma.js";
+import { AppError } from "../utils/appError.js";
 
 const mpApi = axios.create({
 	baseURL: "https://api.mercadopago.com",
@@ -24,13 +25,24 @@ interface CheckoutPayload {
 
 export class PaymentService {
 	async createPayment(data: CheckoutPayload) {
-		let paymentResponse: {
-			id: string;
-			init_point: string;
-		};
+		const contribution = await prisma.contribution.create({
+			data: {
+				giftId: data.giftId,
+				guestId: data.guestId,
+				donorName: data.donorName,
+				message: data.message,
+				amount: data.amount,
+				paymentMethod: data.paymentMethod,
+				payerEmail: data.payerEmail,
+				payerDocument: data.payerDocument,
+			},
+		});
+
+		let paymentResponse: { id: string; init_point: string };
 
 		if (process.env.NODE_ENV !== "production") {
 			const { data: prefData } = await mpApi.post("/checkout/preferences", {
+				external_reference: contribution.id, // VÍNCULO AQUI
 				items: [
 					{
 						title: data.giftId ? "Cota de presente" : "Doação livre",
@@ -46,10 +58,12 @@ export class PaymentService {
 					failure: `${process.env.FRONTEND_URL}/erro`,
 				},
 				auto_return: "approved",
+				notification_url: `${process.env.BACKEND_URL}/payments/webhook`,
 			});
+
 			paymentResponse = {
 				id: prefData.id,
-				init_point: prefData.init_point, // URL para o iframe/redirecionamento
+				init_point: prefData.init_point,
 			};
 		} else {
 			if (!data.payerEmail || !data.payerDocument) {
@@ -65,6 +79,7 @@ export class PaymentService {
 					data.paymentMethod === "PIX" ? "pix" : data.exactPaymentMethodId,
 				token: data.paymentMethod === "CREDIT_CARD" ? data.token : undefined,
 				installments: data.installments || 1,
+				external_reference: contribution.id,
 				payer: {
 					email: data.payerEmail,
 					identification: {
@@ -78,18 +93,9 @@ export class PaymentService {
 			paymentResponse = payData;
 		}
 
-		const contribution = await prisma.contribution.create({
-			data: {
-				giftId: data.giftId,
-				guestId: data.guestId,
-				donorName: data.donorName,
-				message: data.message,
-				amount: data.amount,
-				paymentId: paymentResponse.id.toString(),
-				paymentMethod: data.paymentMethod,
-				payerEmail: data.payerEmail,
-				payerDocument: data.payerDocument,
-			},
+		await prisma.contribution.update({
+			where: { id: contribution.id },
+			data: { paymentId: paymentResponse.id.toString() },
 		});
 
 		return {
@@ -99,17 +105,24 @@ export class PaymentService {
 	}
 
 	async processWebhook(paymentId: string) {
-		// 1. Busca o status real do pagamento direto na API do Mercado Pago (Segurança contra falsificação)
 		const { data: mpPayment } = await mpApi.get(`/v1/payments/${paymentId}`);
 
 		if (mpPayment.status !== "approved") {
 			return { status: "ignored", reason: "Pagamento não está aprovado" };
 		}
 
-		// 2. Processa a aprovação no banco dentro de uma transação para evitar concorrência
+		const myContributionId = mpPayment.external_reference;
+
+		if (!myContributionId) {
+			throw new AppError(
+				500,
+				"Pagamento no MP não possui external_reference vinculado.",
+			);
+		}
+
 		await prisma.$transaction(async (tx) => {
 			const contribution = await tx.contribution.findUnique({
-				where: { paymentId: paymentId.toString() },
+				where: { id: myContributionId },
 			});
 
 			if (!contribution) {
@@ -117,13 +130,13 @@ export class PaymentService {
 			}
 
 			if (contribution.status === "APPROVED") {
-				return; // Já foi processado anteriormente
+				return;
 			}
 
 			// Atualiza o status da contribuição
 			await tx.contribution.update({
 				where: { id: contribution.id },
-				data: { status: "APPROVED" },
+				data: { status: "APPROVED", paymentId },
 			});
 
 			// Se estiver vinculada a um presente, soma o valor arrecadado

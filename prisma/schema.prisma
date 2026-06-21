@@ -62,7 +62,7 @@ model Contribution {
   amount  Float
   status  String  @default("PENDING")
 
-  paymentId     String  @unique @map("payment_id")
+  paymentId     String? @unique @map("payment_id")
   paymentMethod String  @map("payment_method")
   payerEmail    String? @map("payer_email")
   payerDocument String? @map("payer_document")

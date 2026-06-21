@@ -23,6 +23,8 @@ const server = Fastify({
 });
 
 async function main() {
+	console.log("Backend_url", process.env.BACKEND_URL);
+
 	if (!process.env.JWT_ACCESS_TOKEN_SECRET) {
 		throw new Error(
 			"Variável de ambiente JWT_ACCESS_TOKEN_SECRET é obrigatória.",
