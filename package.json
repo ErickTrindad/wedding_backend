@@ -10,7 +10,7 @@
 		"db:migrate": "prisma migrate dev",
 		"db:studio": "prisma studio",
 		"db:reset": "prisma migrate reset",
-		"build": "tsc",
+		"build": "tsc -p tsconfig.build.json",
 		"start": "node dist/server.js"
 	},
 	"keywords": [],
