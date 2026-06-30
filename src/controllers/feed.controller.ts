@@ -32,6 +32,9 @@ export class FeedController {
 				.status(400)
 				.send({ error: "Post deve ter texto ou pelo menos uma imagem" });
 		}
+		if (images.length > 3) {
+			return rep.status(400).send({ error: "Máximo de fotos: 3" });
+		}
 
 		const authorName = isAnonymous ? anonymousName : jwtName;
 		if (!authorName) {

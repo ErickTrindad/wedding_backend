@@ -7,6 +7,33 @@ export class FeedService {
 		text?: string,
 		images: string[] = [],
 	) {
+		if (guestId) {
+			const lastPost = await prisma.post.findFirst({
+				where: {
+					guestId,
+				},
+				orderBy: {
+					createdAt: "desc",
+				},
+				select: {
+					createdAt: true,
+				},
+			});
+
+			if (lastPost) {
+				const now = new Date();
+				const diffInMs = now.getTime() - lastPost.createdAt.getTime();
+				const diffInMinutes = diffInMs / (1000 * 60);
+
+				if (diffInMinutes < 15) {
+					const remainingTime = Math.ceil(15 - diffInMinutes);
+					throw new Error(
+						`Limite atingido. Você só pode criar um post a cada 15 minutos. Tente novamente em ${remainingTime} minutos.`,
+					);
+				}
+			}
+		}
+
 		return await prisma.post.create({
 			data: {
 				text,
