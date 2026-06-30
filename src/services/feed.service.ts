@@ -1,4 +1,5 @@
 import prisma from "../config/prisma.js";
+import { AppError } from "../utils/appError.js";
 
 export class FeedService {
 	async createPost(
@@ -27,7 +28,8 @@ export class FeedService {
 
 				if (diffInMinutes < 15) {
 					const remainingTime = Math.ceil(15 - diffInMinutes);
-					throw new Error(
+					throw new AppError(
+						400,
 						`Limite atingido. Você só pode criar um post a cada 15 minutos. Tente novamente em ${remainingTime} minutos.`,
 					);
 				}
