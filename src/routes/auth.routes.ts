@@ -5,7 +5,9 @@ const authController = new AuthController();
 
 export async function authRoutes(fastify: FastifyInstance) {
 	fastify.get("/magic-link", authController.getFamilyByLink);
+	fastify.get("/me", authController.me);
 
+	fastify.post("/anonymous-login", authController.anonymousLogin);
 	fastify.post("/select-member", authController.selectMember);
 	fastify.post("/logout", authController.logout);
 }

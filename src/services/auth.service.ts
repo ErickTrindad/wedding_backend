@@ -5,6 +5,14 @@ export class AuthService {
 	async verifyMagicLink(accessCode: string) {
 		const family = await prisma.family.findUnique({
 			where: { accessCode },
+			include: {
+				guests: {
+					select: {
+						id: true,
+						name: true,
+					},
+				},
+			},
 		});
 
 		if (!family) {

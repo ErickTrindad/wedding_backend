@@ -18,6 +18,37 @@ export class AuthController {
 		return rep.status(200).send({ family });
 	}
 
+	async anonymousLogin(
+		req: FastifyRequest<{ Body: { name: string } }>,
+		rep: FastifyReply,
+	) {
+		const { name } = req.body;
+		const guestName = name?.trim();
+
+		const tokenPayload = {
+			familyId: "anonymous",
+			guestId: "anonymous",
+			name: guestName,
+			isAnonymous: true,
+			isAdmin: false,
+		};
+
+		const token = await rep.jwtSign(tokenPayload);
+
+		rep.setCookie("token", token, {
+			path: "/",
+			httpOnly: true,
+			secure: process.env.NODE_ENV === "production",
+			sameSite: process.env.NODE_ENV === "production" ? "strict" : "lax",
+			maxAge: 60 * 60 * 24 * 365,
+		});
+
+		return rep.status(200).send({
+			success: true,
+			user: { name: guestName, isAnonymous: true, isAdmin: false },
+		});
+	}
+
 	async selectMember(
 		req: FastifyRequest<{ Body: { familyId: string; guestId: string } }>,
 		rep: FastifyReply,
@@ -51,8 +82,38 @@ export class AuthController {
 		return rep.status(200).send({
 			success: true,
 			message: `Bem-vindo(a), ${guest.name}`,
-			guestName: guest.name,
+			user: {
+				familyId,
+				guestId,
+				name: guest.name,
+				isAnonymous: false,
+				isAdmin: guest.isAdmin,
+			},
 		});
+	}
+
+	async me(req: FastifyRequest, rep: FastifyReply) {
+		try {
+			await req.jwtVerify();
+
+			return rep.status(200).send({
+				success: true,
+				user: {
+					familyId: req.user.familyId,
+					guestId: req.user.guestId,
+					name: req.user.name,
+					isAnonymous: req.user.isAnonymous,
+					isAdmin: req.user.isAdmin,
+				},
+			});
+		} catch {
+			rep.clearCookie("token", { path: "/" });
+
+			return rep.status(401).send({
+				success: false,
+				error: "Sessão inválida ou expirada",
+			});
+		}
 	}
 
 	async logout(_: FastifyRequest, rep: FastifyReply) {

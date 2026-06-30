@@ -11,25 +11,15 @@ export const errorHandler: FastifyErrorHandler = (error, req, rep) => {
 		});
 	}
 
-	// if (error instanceof ZodError) {
-	// 	const formattedErrors = error.issues.map((err) => ({
-	// 		field: err.path.join("."),
-	// 		message: err.message,
-	// 	}));
-
-	// 	return rep.status(400).send({
-	// 		type: "validation",
-	// 		errors: formattedErrors,
-	// 	});
-	// }
-
 	const fastifyError = error as FastifyError;
 
 	if (fastifyError.code === "FST_ERR_CTP_INVALID_JSON_BODY") {
 		return rep.status(400).send({
 			type: "validation",
-			message:
-				"O corpo da requisição não é um JSON válido. Verifique a sintaxe.",
+			error: {
+				message:
+					"O corpo da requisição não é um JSON válido. Verifique a sintaxe.",
+			},
 		});
 	}
 
@@ -47,6 +37,6 @@ export const errorHandler: FastifyErrorHandler = (error, req, rep) => {
 
 	return rep.status(500).send({
 		type: "generalError",
-		message: "Ocorreu um erro interno no servidor.",
+		error: { message: "Ocorreu um erro interno no servidor." },
 	});
 };
