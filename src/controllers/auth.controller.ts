@@ -71,14 +71,6 @@ export class AuthController {
 
 		const token = await rep.jwtSign(tokenPayload);
 
-		rep.setCookie("token", token, {
-			path: "/",
-			httpOnly: true,
-			secure: process.env.NODE_ENV === "production",
-			sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
-			maxAge: 60 * 60 * 24 * 365,
-		});
-
 		return rep.status(200).send({
 			success: true,
 			message: `Bem-vindo(a), ${guest.name}`,
@@ -89,6 +81,7 @@ export class AuthController {
 				isAnonymous: false,
 				isAdmin: guest.isAdmin,
 			},
+			token,
 		});
 	}
 
