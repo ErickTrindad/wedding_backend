@@ -14,9 +14,10 @@ export async function uploadToR2(
 	fileBuffer: Buffer,
 	mimetype: string,
 	originalName: string,
+	folder: string = "Feed",
 ): Promise<string> {
 	const fileExtension = originalName.split(".").pop();
-	const fileName = `casamento/${randomUUID()}.${fileExtension}`;
+	const fileName = `${folder}/${randomUUID()}.${fileExtension}`;
 
 	const command = new PutObjectCommand({
 		Bucket: process.env.CF_BUCKET_NAME,

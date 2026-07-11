@@ -1,5 +1,9 @@
 import type { FastifyReply, FastifyRequest } from "fastify";
-import { type CreateGiftDto, GiftService } from "../services/gift.service.js";
+import {
+	type CreateGiftDto,
+	type ExternalLinkDto,
+	GiftService,
+} from "../services/gift.service.js";
 import { uploadToR2 } from "../utils/r2.util.js";
 
 const giftService = new GiftService();
@@ -18,6 +22,9 @@ export class GiftController {
 		const titleField = data.fields.title as { value: string } | undefined;
 		const valueField = data.fields.totalValue as { value: string } | undefined;
 		const descField = data.fields.description as { value: string } | undefined;
+		const linksField = data.fields.externalLinks as
+			| { value: string }
+			| undefined;
 
 		if (!titleField || !valueField) {
 			return rep.status(400).send({ error: "Título e valor são obrigatórios" });
@@ -27,14 +34,32 @@ export class GiftController {
 		const totalValue = parseFloat(valueField.value);
 		const description = descField?.value;
 
+		let externalLinks: ExternalLinkDto[] | undefined;
+
+		if (linksField?.value) {
+			try {
+				externalLinks = JSON.parse(linksField.value);
+			} catch {
+				return rep
+					.status(400)
+					.send({ error: "O campo externalLinks deve ser um JSON válido." });
+			}
+		}
+
 		const buffer = await data.toBuffer();
-		const imageUrl = await uploadToR2(buffer, data.mimetype, data.filename);
+		const imageUrl = await uploadToR2(
+			buffer,
+			data.mimetype,
+			data.filename,
+			"Gifts",
+		);
 
 		const gift = await giftService.createGift({
 			title,
 			totalValue,
 			description,
 			imageUrl,
+			externalLinks,
 		});
 
 		return rep.status(201).send({ gift });
@@ -42,7 +67,7 @@ export class GiftController {
 
 	async getGifts(_: FastifyRequest, reply: FastifyReply) {
 		const gifts = await giftService.getGifts();
-		return reply.status(200).send({ gifts });
+		return reply.status(200).send(gifts);
 	}
 
 	async updateGift(

@@ -38,69 +38,49 @@ export class PaymentService {
 			},
 		});
 
-		let paymentResponse: { id: string; init_point: string };
-
-		if (process.env.NODE_ENV !== "production") {
-			const { data: prefData } = await mpApi.post("/checkout/preferences", {
-				external_reference: contribution.id, // VÍNCULO AQUI
-				items: [
-					{
-						title: data.giftId ? "Cota de presente" : "Doação livre",
-						quantity: 1,
-						unit_price: data.amount,
-					},
-				],
-				payment_methods: {
-					excluded_payment_types: [{ id: "ticket" }],
-				},
-				back_urls: {
-					success: `${process.env.FRONTEND_URL}/sucesso`,
-					failure: `${process.env.FRONTEND_URL}/erro`,
-				},
-				auto_return: "approved",
-				notification_url: `${process.env.BACKEND_URL}/payments/webhook`,
-			});
-
-			paymentResponse = {
-				id: prefData.id,
-				init_point: prefData.init_point,
-			};
-		} else {
-			if (!data.payerEmail || !data.payerDocument) {
-				throw new Error(
-					"E-mail e documento são obrigatórios para pagamentos em produção",
-				);
-			}
-
-			const payload = {
-				transaction_amount: data.amount,
-				description: data.giftId ? "Cota de Presente" : "Doação Livre",
-				payment_method_id:
-					data.paymentMethod === "PIX" ? "pix" : data.exactPaymentMethodId,
-				token: data.paymentMethod === "CREDIT_CARD" ? data.token : undefined,
-				installments: data.installments || 1,
-				external_reference: contribution.id,
-				payer: {
-					email: data.payerEmail,
-					identification: {
-						type: "CPF",
-						number: data.payerDocument.replace(/\D/g, ""),
-					},
-				},
-			};
-
-			const { data: payData } = await mpApi.post("/v1/payments", payload);
-			paymentResponse = payData;
+		if (!data.payerEmail || !data.payerDocument) {
+			throw new Error(
+				"E-mail e documento são obrigatórios para pagamentos em produção",
+			);
 		}
+
+		const payload = {
+			transaction_amount: data.amount,
+			description: data.giftId ? "Cota de Presente" : "Doação Livre",
+			payment_method_id:
+				data.paymentMethod === "PIX" ? "pix" : data.exactPaymentMethodId,
+			token: data.paymentMethod === "CREDIT_CARD" ? data.token : undefined,
+			installments: data.installments || 1,
+			external_reference: contribution.id,
+			payer: {
+				email: data.payerEmail,
+				identification: {
+					type: "CPF",
+					number: data.payerDocument.replace(/\D/g, ""),
+				},
+			},
+		};
+
+		const { data: payData } = await mpApi.post("/v1/payments", payload);
+
+		const pixData =
+			data.paymentMethod === "PIX"
+				? {
+						qrCode: payData.point_of_interaction?.transaction_data?.qr_code,
+						qrCodeBase64:
+							payData.point_of_interaction?.transaction_data?.qr_code_base64,
+					}
+				: null;
 
 		await prisma.contribution.update({
 			where: { id: contribution.id },
-			data: { paymentId: paymentResponse.id.toString() },
+			data: { paymentId: payData.id.toString() },
 		});
 
 		return {
 			contributionId: contribution.id,
-			paymentData: paymentResponse,
+			paymentData: payData,
+			pixData,
 		};
 	}
 

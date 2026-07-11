@@ -43,6 +43,8 @@ model Gift {
   totalValue    Float   @map("total_value")
   gatheredValue Float   @default(0) @map("gathered_value")
 
+  externalLinks Json @default("[]") @map("external_links")
+
   contribution Contribution[]
 
   @@map("gifts")

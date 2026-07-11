@@ -13,7 +13,12 @@ export class FeedController {
 		}
 
 		const buffer = await data.toBuffer();
-		const imageUrl = await uploadToR2(buffer, data.mimetype, data.filename);
+		const imageUrl = await uploadToR2(
+			buffer,
+			data.mimetype,
+			data.filename,
+			"Feed",
+		);
 
 		return rep.status(200).send({ url: imageUrl });
 	}

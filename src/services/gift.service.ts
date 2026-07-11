@@ -1,16 +1,28 @@
+import type { Prisma } from "@prisma/client";
 import prisma from "../config/prisma.js";
+
+export interface ExternalLinkDto {
+	name: string;
+	link: string;
+}
 
 export interface CreateGiftDto {
 	title: string;
 	description?: string;
 	imageUrl: string;
 	totalValue: number;
+	externalLinks?: ExternalLinkDto[];
 }
 
 export class GiftService {
 	async createGift(data: CreateGiftDto) {
 		return await prisma.gift.create({
-			data,
+			data: {
+				...data,
+				externalLinks: data.externalLinks
+					? (data.externalLinks as unknown as Prisma.InputJsonValue)
+					: undefined,
+			},
 		});
 	}
 
