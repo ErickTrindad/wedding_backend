@@ -55,10 +55,6 @@ async function main() {
 
 	await server.register(fastifyJwt, {
 		secret: process.env.JWT_ACCESS_TOKEN_SECRET,
-		cookie: {
-			cookieName: "token",
-			signed: false,
-		},
 	});
 
 	await server.register(fastifyCookie, {
@@ -94,7 +90,7 @@ async function main() {
 	await server.register(feedRoutes, { prefix: "/feed" });
 	await server.register(paymentRoutes, { prefix: "/payments" });
 	await server.register(giftRoutes, { prefix: "/gifts" });
-	await server.register(familyRoutes, { prefix: "/admin/families" });
+	await server.register(familyRoutes, { prefix: "/families" });
 	await server.register(whatsappRoutes, { prefix: "/admin/whatsapp" });
 	await server.register(dashboardRoutes, { prefix: "/admin/dashboard" });
 	await server.register(messageRoutes, { prefix: "/messages" });

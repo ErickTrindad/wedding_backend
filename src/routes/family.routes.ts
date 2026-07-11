@@ -5,10 +5,15 @@ import { authenticate, isAdmin } from "../middlewares/auth.middleware.js";
 const familyController = new FamilyController();
 
 export async function familyRoutes(fastify: FastifyInstance) {
-	fastify.get(
+	fastify.get<{ Params: { id?: string } }>(
 		"/",
 		{ preHandler: [authenticate, isAdmin] },
 		familyController.getFamilies,
+	);
+	fastify.get<{ Params: { familyId: string } }>(
+		"/:familyId/guests",
+		{ preHandler: [authenticate] },
+		familyController.getFamilyGuests,
 	);
 	fastify.post<{
 		Body: { name: string; guestNames: string[] };

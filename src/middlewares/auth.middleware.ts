@@ -3,7 +3,7 @@ import { AppError } from "../utils/appError.js";
 
 export async function authenticate(req: FastifyRequest, rep: FastifyReply) {
 	try {
-		await req.jwtVerify({ onlyCookie: true });
+		await req.jwtVerify();
 
 		if (req.user.isAnonymous) {
 			throw new AppError(403, "Acesso anônimo não permitido para essa rota");

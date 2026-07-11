@@ -1,4 +1,5 @@
 import type { FastifyReply, FastifyRequest } from "fastify";
+import prisma from "../config/prisma.js";
 import { AuthService } from "../services/auth.service.js";
 
 const authService = new AuthService();
@@ -35,17 +36,10 @@ export class AuthController {
 
 		const token = await rep.jwtSign(tokenPayload);
 
-		rep.setCookie("token", token, {
-			path: "/",
-			httpOnly: true,
-			secure: process.env.NODE_ENV === "production",
-			sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
-			maxAge: 60 * 60 * 24 * 365,
-		});
-
 		return rep.status(200).send({
 			success: true,
 			user: { name: guestName, isAnonymous: true, isAdmin: false },
+			token,
 		});
 	}
 
@@ -67,6 +61,7 @@ export class AuthController {
 			guestId: guest.id,
 			name: guest.name,
 			isAnonymous: false,
+			isAdmin: guest.isAdmin,
 		};
 
 		const token = await rep.jwtSign(tokenPayload);
@@ -89,12 +84,25 @@ export class AuthController {
 		try {
 			await req.jwtVerify();
 
+			let actualName = req.user.name;
+
+			if (!req.user.isAnonymous && req.user.guestId) {
+				const guestDb = await prisma.guest.findUnique({
+					where: { id: req.user.guestId },
+					select: { name: true },
+				});
+
+				if (guestDb) {
+					actualName = guestDb.name;
+				}
+			}
+
 			return rep.status(200).send({
 				success: true,
 				user: {
 					familyId: req.user.familyId,
 					guestId: req.user.guestId,
-					name: req.user.name,
+					name: actualName,
 					isAnonymous: req.user.isAnonymous,
 					isAdmin: req.user.isAdmin,
 				},

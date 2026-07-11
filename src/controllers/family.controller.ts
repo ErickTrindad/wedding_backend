@@ -29,9 +29,24 @@ export class FamilyController {
 		return rep.status(201).send({ family });
 	}
 
-	async getFamilies(_: FastifyRequest, rep: FastifyReply) {
-		const families = await familyService.getFamilies();
+	async getFamilies(
+		req: FastifyRequest<{ Params: { id?: string } }>,
+		rep: FastifyReply,
+	) {
+		const { id } = req.params;
+
+		const families = await familyService.getFamilies(id);
 		return rep.status(200).send({ families });
+	}
+
+	async getFamilyGuests(
+		req: FastifyRequest<{ Params: { familyId: string } }>,
+		rep: FastifyReply,
+	) {
+		const { familyId } = req.params;
+
+		const guests = await familyService.getFamilyGuests(familyId);
+		return rep.status(200).send(guests);
 	}
 
 	async addGuestSlot(

@@ -22,14 +22,22 @@ export class FamilyService {
 		});
 	}
 
-	async getFamilies() {
+	async getFamilies(id?: string) {
 		return await prisma.family.findMany({
+			where: { id },
 			include: {
 				guests: true,
 				_count: {
 					select: { guests: true },
 				},
 			},
+			orderBy: { name: "asc" },
+		});
+	}
+
+	async getFamilyGuests(familyId: string) {
+		return await prisma.guest.findMany({
+			where: { familyId },
 			orderBy: { name: "asc" },
 		});
 	}
