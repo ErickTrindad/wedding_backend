@@ -1,4 +1,5 @@
 import axios from "axios";
+import { randomUUID } from "crypto";
 import prisma from "../config/prisma.js";
 import { AppError } from "../utils/appError.js";
 
@@ -61,7 +62,11 @@ export class PaymentService {
 			},
 		};
 
-		const { data: payData } = await mpApi.post("/v1/payments", payload);
+		const { data: payData } = await mpApi.post("/v1/payments", payload, {
+			headers: {
+				"X-Idempotency-Key": randomUUID(),
+			},
+		});
 
 		const pixData =
 			data.paymentMethod === "PIX"
